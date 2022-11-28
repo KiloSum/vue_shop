@@ -55,7 +55,8 @@
               type="primary"
               icon="el-icon-edit"
               size="mini"
-            @click="editDialogShow(scope.row.id)"></el-button>
+              @click="editDialogShow(scope.row.id)"
+            ></el-button>
             <!-- 删除按钮 -->
             <el-button
               margin="0,0,0,0px"
@@ -75,6 +76,7 @@
                 type="warning"
                 icon="el-icon-setting"
                 size="mini"
+                @click="setRoleDialogShow(scope.row)"
               ></el-button>
             </el-tooltip>
           </template>
@@ -97,12 +99,14 @@
       title="添加用户"
       :visible.sync="addDialogVisible"
       width="50%"
-      @close="addDialogClosed">
+      @close="addDialogClosed"
+    >
       <el-form
         :model="addForm"
         :rules="addFormRules"
         ref="addFormRef"
-        label-width="80px">
+        label-width="80px"
+      >
         <el-form-item label="用户名称" prop="username">
           <el-input v-model="addForm.username"></el-input>
         </el-form-item>
@@ -126,13 +130,15 @@
       title="修改用户"
       :visible.sync="editDialogVisible"
       width="50%"
-      @close="editDialogClosed">
+      @close="editDialogClosed"
+    >
       <el-form
         :model="editForm"
         :rules="editFormRules"
         ref="editFormRef"
-        label-width="80px">
-        <el-form-item label="用户名称" >
+        label-width="80px"
+      >
+        <el-form-item label="用户名称">
           <el-input v-model="editForm.username" disabled></el-input>
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
@@ -145,6 +151,32 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="editDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="editUser">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!-- 角色设置 对话框 -->
+    <el-dialog
+      title="角色设置"
+      :visible.sync="setRoleDialogVisible"
+      width="50%"
+      @close="setRoleDialogClosed"
+    >
+      <p>当前用户： {{ userInfo.username }}</p>
+      <p>当前角色： {{ userInfo.role_name }}</p>
+      <p>
+        分配新角色：
+        <el-select v-model="selectedRole" placeholder="请选择">
+          <el-option
+            v-for="item in rolesList"
+            :key="item.rid"
+            :label="item.roleName"
+            :value="item.id"
+          >
+          </el-option>
+        </el-select>
+      </p>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="setRoleDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="setRole">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -178,7 +210,7 @@ export default {
       queryInfo: {
         query: '',
         pagenum: 1,
-        pagesize: 2
+        pagesize: 2,
       },
       userList: [],
       total: 0,
@@ -188,17 +220,17 @@ export default {
         username: '',
         password: '',
         email: '',
-        mobile: ''
+        mobile: '',
       },
       editForm: {
         username: '',
         email: '',
-        mobile: ''
+        mobile: '',
       },
       addFormRules: {
         username: [
           { min: 3, max: 10, message: '长度在 3 到 5 个字符', trigger: 'blur' },
-          { required: true, message: '请输入用户名称', trigger: 'blur' }
+          { required: true, message: '请输入用户名称', trigger: 'blur' },
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
@@ -206,41 +238,53 @@ export default {
             min: 6,
             max: 12,
             message: '长度在 6 到 12 个字符',
-            trigger: 'blur'
-          }
+            trigger: 'blur',
+          },
         ],
         email: [
           { required: true, message: '请输入邮箱', trigger: 'blur' },
-          { validactor: checkEmail, trigger: 'blur' }
+          { validactor: checkEmail, trigger: 'blur' },
         ],
         mobile: [
           { required: true, message: '请输入手机号', trigger: 'blur' },
-          { validactor: checkMobile, trigger: 'blur' }
-        ]
+          { validactor: checkMobile, trigger: 'blur' },
+        ],
       },
       editFormRules: {
         email: [
           { required: true, message: '请输入邮箱', trigger: 'blur' },
-          { validactor: checkEmail, trigger: 'blur' }
+          { validactor: checkEmail, trigger: 'blur' },
         ],
         mobile: [
           { required: true, message: '请输入手机号', trigger: 'blur' },
-          { validactor: checkMobile, trigger: 'blur' }
-        ]
-      }
+          { validactor: checkMobile, trigger: 'blur' },
+        ],
+      },
+      setRoleDialogVisible: false,
+      //  要分配角色的用户
+      userInfo: {},
+      //  角色列表
+      rolesList: [],
+      // 分配角色时选中的角色
+      selectedRole: '',
     }
   },
   created() {
     this.getUserList()
+    this.getRolesList()
   },
   methods: {
     // 删除用户
-    async removeUserById (id) {
-      const confirmResult = await this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).catch(err => err)
+    async removeUserById(id) {
+      const confirmResult = await this.$confirm(
+        '此操作将永久删除该用户, 是否继续?',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      ).catch((err) => err)
       // 如果用户确认删除，则返回值为字符串 confirm
       // 如果用户取消了删除，则返回值为字符串 cancel
       // console.log(confirmResult)
@@ -278,7 +322,7 @@ export default {
         this.$message.success('添加成功')
       })
     },
-    async editDialogShow (id) {
+    async editDialogShow(id) {
       this.editDialogVisible = true
       // 请求数据
       const { data: res } = await this.$http.get('users/' + id)
@@ -289,14 +333,16 @@ export default {
       console.log(res)
       return this.$message.success('数据获取成功')
     },
-    editUser () {
+    editUser() {
       this.$refs.editFormRef.validate(async (valid) => {
         console.log(valid)
         if (!valid) return
-        const { data: res } = await this.$http.put('users/' + this.editForm.id,
-          { email: this.editForm.email, mobile: this.editForm.mobile })
+        const { data: res } = await this.$http.put(
+          'users/' + this.editForm.id,
+          { email: this.editForm.email, mobile: this.editForm.mobile }
+        )
         if (res.meta.status !== 200) {
-          this.$message.error('更新失败')
+          return this.$message.error('更新失败')
         }
         // 关闭表单
         this.editDialogVisible = false
@@ -307,7 +353,7 @@ export default {
     },
     async getUserList() {
       const { data: res } = await this.$http.get('users', {
-        params: this.queryInfo
+        params: this.queryInfo,
       })
       if (res.meta.status !== 200) {
         return this.$message.error('获取用户列表失败')
@@ -334,8 +380,42 @@ export default {
         return this.$message.error('更新用户状态失败 ！')
       }
       this.$message.success('更新成功')
-    }
-  }
+    },
+    // 展示分配角色弹窗
+    setRoleDialogShow(user) {
+      // 获取数据
+      this.userInfo = user
+      // 设置是否可视
+      this.setRoleDialogVisible = true
+    },
+    // 监听关闭角色设置弹窗
+    setRoleDialogClosed() {
+      this.selectedRole = ''
+      this.userInfo = {}
+    },
+    // 获取角色列表
+    async getRolesList() {
+      const { data: res } = await this.$http.get('roles')
+      if (res.meta.status !== 200) {
+        return this.$message.error('获取角色列表失败')
+      }
+      this.rolesList = res.data
+    },
+    // 分配角色
+    async setRole() {
+      const { data: res } = await this.$http.put(
+        `users/${this.userInfo.id}/role`,
+        { rid: this.selectedRole }
+      )
+      if (res.meta.status !== 200) {
+        return this.$message.error('分配角色失败')
+      }
+      // 关闭 弹窗
+      this.setRoleDialogVisible = false
+      // 刷新界面
+      this.getUserList()
+    },
+  },
 }
 </script>
 
