@@ -169,7 +169,7 @@ export default {
   methods: {
     // 删除用户
     async removeRoleById (id) {
-      const confirmResult = await this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+      const confirmResult = await this.$confirm('此操作将永久删除该角色, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -182,10 +182,10 @@ export default {
       }
       const { data: res } = await this.$http.delete('roles/' + id)
       if (res.meta.status !== 200) {
-        return this.$message.error('删除用户失败')
+        return this.$message.error('删除角色失败')
       }
       this.getRolesList()
-      this.$message.success('删除用户成功')
+      this.$message.success('删除角色成功')
     },
     // 获取角色列表
     async getRolesList () {
